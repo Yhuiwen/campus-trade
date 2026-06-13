@@ -1,0 +1,13 @@
+import request from './request'
+export const getUsers = () => request.get('/admin/users')
+export const banUser = id => request.put(`/admin/users/${id}/ban`)
+export const unbanUser = id => request.put(`/admin/users/${id}/unban`)
+export const getPendingGoods = () => request.get('/admin/goods/pending')
+export const getAllGoods = () => request.get('/admin/goods')
+export const approveGoods = id => request.put(`/admin/goods/${id}/approve`)
+export const rejectGoods = id => request.put(`/admin/goods/${id}/reject`)
+export const adminOffShelf = id => request.put(`/admin/goods/${id}/off-shelf`)
+export const getStatOverview = () => request.get('/admin/stat/overview')
+export const getGoodsStatusStat = () => request.get('/admin/stat/goods-status')
+export const getCategoryGoodsStat = () => request.get('/admin/stat/category-goods')
+export const getOrderTrendStat = () => request.get('/admin/stat/order-trend')

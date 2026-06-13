@@ -1,0 +1,20 @@
+# Build and runtime output
+target/
+uploads/
+node_modules/
+dist/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Logs and local secrets
+*.log
+.env
+.env.*
+!.env.example
+application-local.yml
+application-dev.yml
+application-local.yaml
+application-dev.yaml
