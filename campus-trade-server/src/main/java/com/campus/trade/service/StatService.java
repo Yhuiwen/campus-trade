@@ -42,7 +42,7 @@ public class StatService {
     public List<NameValue> goodsStatus() {
         Map<String, Long> counts = goodsMapper.selectList(null).stream()
                 .collect(Collectors.groupingBy(Goods::getStatus, Collectors.counting()));
-        return List.of("PENDING", "ON_SALE", "SOLD", "OFF_SHELF", "REJECTED").stream()
+        return List.of("PENDING", "ON_SALE", "LOCKED", "SOLD", "OFF_SHELF", "REJECTED").stream()
                 .map(status -> new NameValue(status, counts.getOrDefault(status, 0L)))
                 .toList();
     }

@@ -18,6 +18,8 @@ onMounted(async () => {
   if (store.isLogin) risk.value = await getGoodsRisk(route.params.id)
 })
 const riskType = level => ({ LOW: 'success', MEDIUM: 'warning', HIGH: 'danger' }[level] || 'info')
+const statusText = { ON_SALE: '在售', PENDING: '待审核', LOCKED: '交易中', SOLD: '已售出', OFF_SHELF: '已下架', REJECTED: '已驳回' }
+const canBuy = status => status === 'ON_SALE'
 const buy = async () => {
   if (!store.isLogin) return router.push(`/login?redirect=${route.fullPath}`)
   await ElMessageBox.confirm('确认购买该商品并创建订单？', '确认下单')
@@ -50,7 +52,7 @@ const toggleFavorite = async () => {
       <el-descriptions :column="1" border>
         <el-descriptions-item label="卖家">{{ goods.sellerNickname }}</el-descriptions-item>
         <el-descriptions-item label="信用分"><el-rate :model-value="goods.sellerCreditScore / 30" disabled show-score /></el-descriptions-item>
-        <el-descriptions-item label="商品状态">{{ goods.status }}</el-descriptions-item>
+        <el-descriptions-item label="商品状态">{{ statusText[goods.status] || goods.status }}</el-descriptions-item>
       </el-descriptions>
       <h3>商品描述</h3><p style="line-height:1.8;white-space:pre-wrap">{{ goods.description }}</p>
       <el-card class="risk-card" shadow="never">
@@ -72,8 +74,8 @@ const toggleFavorite = async () => {
         <el-button size="large" style="width:150px" :type="goods.favorited ? 'warning' : 'default'" @click="toggleFavorite">
           {{ goods.favorited ? '已收藏' : '收藏商品' }}
         </el-button>
-        <el-button type="primary" size="large" style="flex:1" :disabled="goods.status !== 'ON_SALE' || goods.sellerId === store.user?.id" @click="buy">
-          {{ goods.sellerId === store.user?.id ? '这是你的商品' : '立即购买' }}
+        <el-button type="primary" size="large" style="flex:1" :disabled="!canBuy(goods.status) || goods.sellerId === store.user?.id" @click="buy">
+          {{ goods.sellerId === store.user?.id ? '这是你的商品' : goods.status === 'LOCKED' ? '交易中' : '立即购买' }}
         </el-button>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import request from './request'
 export const getGoodsPage = params => request.get('/goods/page', { params })
+export const getMyGoods = params => request.get('/goods/my', { params })
 export const getGoods = id => request.get(`/goods/${id}`)
 export const getHotGoods = () => request.get('/goods/hot')
 export const createGoods = data => request.post('/goods', data)

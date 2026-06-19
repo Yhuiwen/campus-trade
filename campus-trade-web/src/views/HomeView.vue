@@ -13,7 +13,7 @@ const hot = ref([])
 const recommend = ref([])
 const total = ref(0)
 const query = reactive({ current: 1, size: 12, keyword: '', categoryId: null })
-const statusText = { ON_SALE: '在售', PENDING: '待审核', SOLD: '已售出', OFF_SHELF: '已下架', REJECTED: '已驳回' }
+const statusText = { ON_SALE: '在售', PENDING: '待审核', LOCKED: '交易中', SOLD: '已售出', OFF_SHELF: '已下架', REJECTED: '已驳回' }
 const load = async () => {
   const data = await getGoodsPage(query)
   goods.value = data.records
@@ -77,6 +77,6 @@ onMounted(async () => {
         </div>
       </el-card>
     </div>
-    <el-pagination v-if="total > query.size" style="justify-content:center;margin-top:30px" background layout="prev, pager, next" :total="total" :page-size="query.size" v-model:current-page="query.current" @current-change="load" />
+    <el-pagination v-if="total > query.size" v-model:current-page="query.current" style="justify-content:center;margin-top:30px" background layout="prev, pager, next" :total="total" :page-size="query.size" @current-change="load" />
   </div>
 </template>

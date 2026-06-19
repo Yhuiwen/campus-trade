@@ -3,6 +3,7 @@ package com.campus.trade.config;
 import com.campus.trade.security.JwtAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -28,10 +29,15 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtFilter;
     private final ObjectMapper objectMapper;
 
+    @Value("${cors.allowed-origins:http://localhost:5173}")
+    private String corsAllowedOrigins;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         CorsConfiguration cors = new CorsConfiguration();
-        cors.setAllowedOriginPatterns(List.of("*"));
+        List<String> origins = List.of(corsAllowedOrigins.split(",")).stream()
+                .map(String::trim).filter(s -> !s.isEmpty()).toList();
+        cors.setAllowedOrigins(origins);
         cors.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         cors.setAllowedHeaders(List.of("*"));
         cors.setAllowCredentials(true);

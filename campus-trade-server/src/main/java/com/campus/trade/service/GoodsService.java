@@ -18,7 +18,12 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,35 +33,49 @@ public class GoodsService {
     private final CategoryMapper categoryMapper;
     private final CacheService cacheService;
 
-    public IPage<GoodsVo> page(long current, long size, String keyword, Long categoryId, Long sellerId) {
+    public IPage<GoodsVo> page(long current, long size, String keyword, Long categoryId) {
         LambdaQueryWrapper<Goods> query = new LambdaQueryWrapper<Goods>()
-                .eq(sellerId == null, Goods::getStatus, "ON_SALE")
+                .eq(Goods::getStatus, "ON_SALE")
                 .eq(categoryId != null, Goods::getCategoryId, categoryId)
-                .eq(sellerId != null, Goods::getSellerId, sellerId)
                 .and(keyword != null && !keyword.isBlank(),
                         q -> q.like(Goods::getTitle, keyword).or().like(Goods::getDescription, keyword))
                 .orderByDesc(Goods::getCreateTime);
         IPage<Goods> source = goodsMapper.selectPage(new Page<>(current, size), query);
         Page<GoodsVo> result = new Page<>(source.getCurrent(), source.getSize(), source.getTotal());
-        result.setRecords(source.getRecords().stream().map(this::toVo).toList());
+        result.setRecords(toVoList(source.getRecords()));
+        return result;
+    }
+
+    public IPage<GoodsVo> myGoods(long current, long size, Long sellerId) {
+        LambdaQueryWrapper<Goods> query = new LambdaQueryWrapper<Goods>()
+                .eq(Goods::getSellerId, sellerId)
+                .orderByDesc(Goods::getCreateTime);
+        IPage<Goods> source = goodsMapper.selectPage(new Page<>(current, size), query);
+        Page<GoodsVo> result = new Page<>(source.getCurrent(), source.getSize(), source.getTotal());
+        result.setRecords(toVoList(source.getRecords()));
         return result;
     }
 
     public GoodsVo detail(Long id) {
-        return cacheService.get("goods:detail:" + id, new TypeReference<>() {}, () -> {
+        GoodsVo vo = cacheService.get("goods:detail:" + id, new TypeReference<>() {}, () -> {
             Goods goods = goodsMapper.selectById(id);
             if (goods == null) throw new BusinessException("商品不存在");
-            goods.setViewCount(goods.getViewCount() + 1);
-            goodsMapper.updateById(goods);
             return toVo(goods);
         });
+        Goods goods = goodsMapper.selectById(id);
+        if (goods != null) {
+            goods.setViewCount(goods.getViewCount() + 1);
+            goods.setUpdateTime(LocalDateTime.now());
+            goodsMapper.updateById(goods);
+            vo.setViewCount(goods.getViewCount());
+        }
+        return vo;
     }
 
     public List<GoodsVo> hot() {
         return cacheService.get("goods:hot", new TypeReference<>() {}, () ->
-                goodsMapper.selectList(new LambdaQueryWrapper<Goods>().eq(Goods::getStatus, "ON_SALE")
-                                .orderByDesc(Goods::getViewCount).last("LIMIT 8"))
-                        .stream().map(this::toVo).toList());
+                toVoList(goodsMapper.selectList(new LambdaQueryWrapper<Goods>().eq(Goods::getStatus, "ON_SALE")
+                        .orderByDesc(Goods::getViewCount).last("LIMIT 8"))));
     }
 
     public Goods create(GoodsRequest request, Long sellerId) {
@@ -118,15 +137,36 @@ public class GoodsService {
     }
 
     public GoodsVo toVo(Goods goods) {
+        return toVo(goods, null, null);
+    }
+
+    private GoodsVo toVo(Goods goods, User seller, Category category) {
         GoodsVo vo = new GoodsVo();
         BeanUtils.copyProperties(goods, vo);
-        User seller = userMapper.selectById(goods.getSellerId());
-        Category category = categoryMapper.selectById(goods.getCategoryId());
+        if (seller == null) seller = userMapper.selectById(goods.getSellerId());
+        if (category == null) category = categoryMapper.selectById(goods.getCategoryId());
         if (seller != null) {
             vo.setSellerNickname(seller.getNickname());
             vo.setSellerCreditScore(seller.getCreditScore());
         }
         if (category != null) vo.setCategoryName(category.getName());
         return vo;
+    }
+
+    private List<GoodsVo> toVoList(List<Goods> goodsList) {
+        if (goodsList.isEmpty()) return List.of();
+        Set<Long> sellerIds = goodsList.stream().map(Goods::getSellerId).collect(Collectors.toSet());
+        Set<Long> categoryIds = goodsList.stream().map(Goods::getCategoryId).collect(Collectors.toSet());
+        Map<Long, User> sellers = batchMap(sellerIds, userMapper::selectBatchIds, User::getId);
+        Map<Long, Category> categories = batchMap(categoryIds, categoryMapper::selectBatchIds, Category::getId);
+        return goodsList.stream()
+                .map(g -> toVo(g, sellers.get(g.getSellerId()), categories.get(g.getCategoryId())))
+                .toList();
+    }
+
+    private <T> Map<Long, T> batchMap(Collection<Long> ids, Function<Collection<Long>, List<T>> loader,
+                                      Function<T, Long> idGetter) {
+        if (ids.isEmpty()) return Map.of();
+        return loader.apply(ids).stream().collect(Collectors.toMap(idGetter, Function.identity()));
     }
 }

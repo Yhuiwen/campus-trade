@@ -1,15 +1,14 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getCategories, getGoodsPage, offShelfGoods, updateGoods } from '../api/goods'
-import { useUserStore } from '../stores/user'
+import { getCategories, getMyGoods, offShelfGoods, updateGoods } from '../api/goods'
 
-const store = useUserStore()
 const goods = ref([])
 const categories = ref([])
 const dialog = ref(false)
 const form = reactive({ id: null, title: '', description: '', categoryId: null, price: 0, originalPrice: 0, imageUrl: '' })
-const load = async () => { goods.value = (await getGoodsPage({ sellerId: store.user.id, size: 100 })).records }
+const statusText = { ON_SALE: '在售', PENDING: '待审核', LOCKED: '交易中', SOLD: '已售出', OFF_SHELF: '已下架', REJECTED: '已驳回' }
+const load = async () => { goods.value = (await getMyGoods({ size: 100 })).records }
 onMounted(async () => { categories.value = await getCategories(); await load() })
 const edit = item => { Object.assign(form, item); dialog.value = true }
 const save = async () => {
@@ -34,7 +33,7 @@ const offShelf = async id => {
         <template #default="{row}"><div style="display:flex;align-items:center;gap:12px"><img :src="row.imageUrl || 'https://placehold.co/100'" style="width:70px;height:55px;object-fit:cover;border-radius:8px"><b>{{ row.title }}</b></div></template>
       </el-table-column>
       <el-table-column prop="price" label="售价"><template #default="{row}">¥{{ row.price }}</template></el-table-column>
-      <el-table-column prop="status" label="状态"><template #default="{row}"><el-tag>{{ row.status }}</el-tag></template></el-table-column>
+      <el-table-column prop="status" label="状态"><template #default="{row}"><el-tag>{{ statusText[row.status] || row.status }}</el-tag></template></el-table-column>
       <el-table-column prop="viewCount" label="浏览量" />
       <el-table-column label="操作" width="190">
         <template #default="{row}"><el-button link type="primary" :disabled="row.status === 'SOLD'" @click="edit(row)">编辑</el-button><el-button link type="danger" :disabled="['SOLD','OFF_SHELF'].includes(row.status)" @click="offShelf(row.id)">下架</el-button></template>

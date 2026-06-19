@@ -52,11 +52,11 @@ const submit = async () => {
           <el-button v-else size="large">选择图片上传</el-button>
         </el-upload>
       </el-form-item>
-      <el-form-item label="商品标题"><el-input v-model="form.title" maxlength="100" show-word-limit /></el-form-item>
-      <el-form-item label="商品描述"><el-input v-model="form.description" type="textarea" :rows="6" /></el-form-item>
+      <el-form-item label="商品标题"><el-input v-model="form.title" maxlength="100" show-word-limit placeholder="2-100 字" /></el-form-item>
+      <el-form-item label="商品描述"><el-input v-model="form.description" type="textarea" :rows="6" maxlength="1000" show-word-limit placeholder="5-1000 字" /></el-form-item>
       <el-form-item label="分类"><el-select v-model="form.categoryId" style="width:100%"><el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" /></el-select></el-form-item>
       <el-row :gutter="16">
-        <el-col :span="12"><el-form-item label="售价"><el-input-number v-model="form.price" :min="0.01" :precision="2" style="width:100%" /></el-form-item></el-col>
+        <el-col :span="12"><el-form-item label="售价"><el-input-number v-model="form.price" :min="0.01" :precision="2" style="width:100%" /><div class="muted" style="font-size:12px;margin-top:4px">售价不能超过原价的 1.2 倍</div></el-form-item></el-col>
         <el-col :span="12"><el-form-item label="原价"><el-input-number v-model="form.originalPrice" :min="0.01" :precision="2" style="width:100%" /></el-form-item></el-col>
       </el-row>
       <el-button plain type="primary" size="large" style="width:100%;margin-bottom:14px" :loading="adviceLoading" @click="getAdvice">

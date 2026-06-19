@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { safeParseUser } from '../utils/auth'
 
 const routes = [
   { path: '/', component: () => import('../views/HomeView.vue') },
@@ -18,7 +19,7 @@ const router = createRouter({ history: createWebHistory(), routes })
 
 router.beforeEach(to => {
   const token = localStorage.getItem('token')
-  const user = JSON.parse(localStorage.getItem('user') || 'null')
+  const user = safeParseUser()
   if (to.meta.auth && !token) return `/login?redirect=${encodeURIComponent(to.fullPath)}`
   if (to.meta.admin && user?.role !== 'ADMIN') return '/'
   if (to.meta.guest && token) return '/'

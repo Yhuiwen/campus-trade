@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import * as authApi from '../api/auth'
+import { safeParseUser } from '../utils/auth'
 
 export const useUserStore = defineStore('user', () => {
   const token = ref(localStorage.getItem('token') || '')
-  const user = ref(JSON.parse(localStorage.getItem('user') || 'null'))
+  const user = ref(safeParseUser())
   const isLogin = computed(() => Boolean(token.value))
   const isAdmin = computed(() => user.value?.role === 'ADMIN')
 

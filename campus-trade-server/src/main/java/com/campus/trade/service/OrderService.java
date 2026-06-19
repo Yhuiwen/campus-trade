@@ -17,8 +17,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,11 +37,10 @@ public class OrderService {
     @Transactional
     public TradeOrder create(Long goodsId, Long buyerId) {
         Goods goods = goodsMapper.selectById(goodsId);
-        if (goods == null || !"ON_SALE".equals(goods.getStatus())) throw new BusinessException("商品当前不可购买");
+        if (goods == null) throw new BusinessException("商品不存在");
         if (goods.getSellerId().equals(buyerId)) throw new BusinessException("不能购买自己的商品");
-        Long active = orderMapper.selectCount(new LambdaQueryWrapper<TradeOrder>()
-                .eq(TradeOrder::getGoodsId, goodsId).eq(TradeOrder::getStatus, "CREATED"));
-        if (active > 0) throw new BusinessException("该商品已有待处理订单");
+        if (!"ON_SALE".equals(goods.getStatus())) throw new BusinessException("商品当前不可购买");
+        if (goodsMapper.lockIfOnSale(goodsId) == 0) throw new BusinessException("商品当前不可购买");
         TradeOrder order = new TradeOrder();
         order.setOrderNo("CT" + UUID.randomUUID().toString().replace("-", "").substring(0, 18).toUpperCase());
         order.setGoodsId(goodsId);
@@ -47,6 +51,7 @@ public class OrderService {
         order.setCreateTime(LocalDateTime.now());
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.insert(order);
+        cacheService.evictGoods(goodsId);
         return order;
     }
 
@@ -66,6 +71,8 @@ public class OrderService {
         order.setStatus("CANCELLED");
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
+        goodsMapper.restoreIfLocked(order.getGoodsId());
+        cacheService.evictGoods(order.getGoodsId());
     }
 
     @Transactional
@@ -76,11 +83,10 @@ public class OrderService {
         order.setStatus("COMPLETED");
         order.setUpdateTime(LocalDateTime.now());
         orderMapper.updateById(order);
-        Goods goods = goodsMapper.selectById(order.getGoodsId());
-        goods.setStatus("SOLD");
-        goods.setUpdateTime(LocalDateTime.now());
-        goodsMapper.updateById(goods);
-        cacheService.evictGoods(goods.getId());
+        if (goodsMapper.soldIfLocked(order.getGoodsId()) == 0) {
+            throw new BusinessException("商品状态异常，无法完成订单");
+        }
+        cacheService.evictGoods(order.getGoodsId());
     }
 
     public TradeOrder get(Long id) {
@@ -94,20 +100,38 @@ public class OrderService {
     }
 
     private List<OrderVo> list(LambdaQueryWrapper<TradeOrder> query) {
-        return orderMapper.selectList(query.orderByDesc(TradeOrder::getCreateTime)).stream().map(order -> {
+        List<TradeOrder> orders = orderMapper.selectList(query.orderByDesc(TradeOrder::getCreateTime));
+        if (orders.isEmpty()) return List.of();
+
+        Set<Long> goodsIds = orders.stream().map(TradeOrder::getGoodsId).collect(Collectors.toSet());
+        Set<Long> userIds = new HashSet<>();
+        orders.forEach(order -> {
+            userIds.add(order.getBuyerId());
+            userIds.add(order.getSellerId());
+        });
+        Set<Long> orderIds = orders.stream().map(TradeOrder::getId).collect(Collectors.toSet());
+
+        Map<Long, Goods> goodsMap = goodsMapper.selectBatchIds(goodsIds).stream()
+                .collect(Collectors.toMap(Goods::getId, Function.identity()));
+        Map<Long, User> userMap = userMapper.selectBatchIds(userIds).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+        Set<Long> reviewedOrderIds = reviewMapper.selectList(new LambdaQueryWrapper<Review>()
+                        .in(Review::getOrderId, orderIds))
+                .stream().map(Review::getOrderId).collect(Collectors.toSet());
+
+        return orders.stream().map(order -> {
             OrderVo vo = new OrderVo();
             BeanUtils.copyProperties(order, vo);
-            Goods goods = goodsMapper.selectById(order.getGoodsId());
-            User buyer = userMapper.selectById(order.getBuyerId());
-            User seller = userMapper.selectById(order.getSellerId());
+            Goods goods = goodsMap.get(order.getGoodsId());
+            User buyer = userMap.get(order.getBuyerId());
+            User seller = userMap.get(order.getSellerId());
             if (goods != null) {
                 vo.setGoodsTitle(goods.getTitle());
                 vo.setGoodsImageUrl(goods.getImageUrl());
             }
             if (buyer != null) vo.setBuyerNickname(buyer.getNickname());
             if (seller != null) vo.setSellerNickname(seller.getNickname());
-            vo.setReviewed(reviewMapper.selectCount(new LambdaQueryWrapper<Review>()
-                    .eq(Review::getOrderId, order.getId())) > 0);
+            vo.setReviewed(reviewedOrderIds.contains(order.getId()));
             return vo;
         }).toList();
     }

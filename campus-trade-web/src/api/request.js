@@ -1,7 +1,13 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { clearAuth } from '../utils/auth'
 
-const request = axios.create({ baseURL: '/api', timeout: 10000 })
+const request = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  timeout: 10000
+})
+
+let redirectingToLogin = false
 
 request.interceptors.request.use(config => {
   const token = localStorage.getItem('token')
@@ -19,10 +25,16 @@ request.interceptors.response.use(
     return result.data
   },
   error => {
-    ElMessage.error(error.response?.data?.message || error.message || '网络异常')
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+    const status = error.response?.status
+    if (status === 401) {
+      clearAuth()
+      if (!redirectingToLogin) {
+        redirectingToLogin = true
+        const redirect = encodeURIComponent(window.location.pathname + window.location.search)
+        window.location.href = `/login?redirect=${redirect}`
+      }
+    } else {
+      ElMessage.error(error.response?.data?.message || error.message || '网络异常')
     }
     return Promise.reject(error)
   }

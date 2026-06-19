@@ -2,7 +2,6 @@ package com.campus.trade.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.campus.trade.common.ApiResponse;
-import com.campus.trade.common.BusinessException;
 import com.campus.trade.common.CurrentUser;
 import com.campus.trade.dto.GoodsRequest;
 import com.campus.trade.entity.Goods;
@@ -29,12 +28,15 @@ public class GoodsController {
             @RequestParam(defaultValue = "1") long current,
             @RequestParam(defaultValue = "12") long size,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Long categoryId,
-            @RequestParam(required = false) Long sellerId) {
-        if (sellerId != null && !sellerId.equals(CurrentUser.id())) {
-            throw new BusinessException(403, "只能查询自己的非公开商品");
-        }
-        return ApiResponse.success(goodsService.page(current, size, keyword, categoryId, sellerId));
+            @RequestParam(required = false) Long categoryId) {
+        return ApiResponse.success(goodsService.page(current, size, keyword, categoryId));
+    }
+
+    @GetMapping("/my")
+    public ApiResponse<IPage<GoodsVo>> my(
+            @RequestParam(defaultValue = "1") long current,
+            @RequestParam(defaultValue = "12") long size) {
+        return ApiResponse.success(goodsService.myGoods(current, size, CurrentUser.id()));
     }
 
     @GetMapping("/hot")

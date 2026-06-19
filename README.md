@@ -23,6 +23,16 @@
 - 智能交易助手：发布优化、价格评估、交易风险、个性化推荐和规则问答
 - Redis：缓存热门商品和商品详情，商品状态变化时主动清理
 
+## 项目亮点
+
+- **JWT + Spring Security 权限控制**：无状态认证，USER/ADMIN 分级授权，Service 层校验数据归属防越权。
+- **Redis 商品详情与热门商品缓存**：热点数据 10 分钟 TTL，商品变更主动失效；Redis 不可用时自动降级，不影响主流程。
+- **商品交易状态流转**：`PENDING → ON_SALE → LOCKED（交易中）→ SOLD`，下单时条件更新防并发重复购买。
+- **信用分动态评价体系**：买家评价后按星级联动调整卖家 0-150 信用分。
+- **收藏与浏览历史**：组合唯一索引幂等写入，详情页展示收藏状态。
+- **规则版智能交易助手 Agent**：本地规则引擎实现发布建议、价格评估、风险分析、个性化推荐和问答。
+- **AgentModelProvider 可插拔扩展点**：预留接口，后续可平滑接入真实大模型。
+
 ## 项目结构
 
 ```text
@@ -130,11 +140,19 @@ npm.cmd run dev
 | Redis 主机/端口 | `localhost:6379` | `REDIS_HOST` / `REDIS_PORT` |
 | Redis 密码 | 空 | `REDIS_PASSWORD` |
 | 上传目录 | `uploads` | `UPLOAD_DIR` |
-| JWT 密钥 | 仅供演示的开发密钥 | `JWT_SECRET` |
+| CORS 允许来源 | `http://localhost:5173` | `CORS_ALLOWED_ORIGINS`（多个用逗号分隔） |
+| JWT 密钥 | 仅供演示的开发密钥（至少 32 字符） | `JWT_SECRET`（**生产环境必须替换**） |
 | JWT 有效期 | `86400000` 毫秒 | `JWT_EXPIRATION` |
 
-生产环境必须替换 `JWT_SECRET`。默认 MySQL 密码和 JWT 字符串仅用于本地演示，
+生产环境必须替换 `JWT_SECRET`（至少 32 字符）。默认 MySQL 密码和 JWT 字符串仅用于本地演示，
 不要把真实数据库密码、Redis 密码、Token 或 API Key 提交到代码仓库。
+
+前端环境变量（`campus-trade-web/.env.development`）：
+
+| 变量 | 默认值 | 说明 |
+| --- | --- | --- |
+| `VITE_API_BASE_URL` | `/api` | 前端 API 请求前缀 |
+| `VITE_API_PROXY_TARGET` | `http://localhost:8080` | 开发环境 Vite 代理目标 |
 
 ## 默认账号
 
@@ -146,13 +164,24 @@ npm.cmd run dev
 
 数据库中存储的是 BCrypt 密文。
 
+## 推荐演示流程
+
+1. 使用 `admin / 123456` 登录管理后台，熟悉数据看板。
+2. 使用 `student1` 发布一件闲置商品（可尝试 Agent 发布建议）。
+3. 管理员审核通过，商品变为 `ON_SALE`。
+4. 使用 `student2` 浏览商品详情，收藏并下单，商品变为 `LOCKED`（交易中）。
+5. 买家可取消订单，商品恢复 `ON_SALE`；或卖家确认完成，商品变为 `SOLD`。
+6. 买家对卖家进行 1-5 星评价，查看卖家信用分变化。
+7. 体验收藏、浏览历史功能。
+8. 使用智能交易助手进行价格建议、风险分析、推荐和问答。
+
 ## 业务流程
 
 1. 用户注册或登录。
 2. 卖家发布商品，商品进入 `PENDING` 状态。
 3. 管理员审核通过后，商品变为 `ON_SALE`。
-4. 买家浏览、收藏商品并创建订单。
-5. 买家可在完成前取消订单；卖家确认交易完成后订单变为 `COMPLETED`，商品变为 `SOLD`。
+4. 买家浏览、收藏商品并创建订单，商品变为 `LOCKED`（交易中）。
+5. 买家可在完成前取消订单，商品恢复 `ON_SALE`；卖家确认交易完成后订单变为 `COMPLETED`，商品变为 `SOLD`。
 6. 买家对卖家进行 1-5 星评价，系统同步调整卖家信用分。
 7. 管理员通过数据看板查看平台业务数据。
 
@@ -198,7 +227,7 @@ npm.cmd run dev
 | 模块 | 接口 |
 | --- | --- |
 | 认证 | `POST /api/auth/register`、`POST /api/auth/login`、`GET /api/auth/me` |
-| 商品 | `GET /api/goods/page`、`GET /api/goods/{id}`、`GET /api/goods/hot`、`POST /api/goods` |
+| 商品 | `GET /api/goods/page`、`GET /api/goods/my`、`GET /api/goods/{id}`、`GET /api/goods/hot`、`POST /api/goods` |
 | 订单 | `POST /api/orders`、`GET /api/orders/buy`、`GET /api/orders/sell`、取消、完成 |
 | 评价 | `POST /api/reviews`、`GET /api/reviews/user/{userId}` |
 | 收藏 | `POST/DELETE /api/favorites/{goodsId}`、`GET /api/favorites/my` |
@@ -211,6 +240,69 @@ npm.cmd run dev
 接口统一返回 `{ "code": 200, "message": "success", "data": ... }`。
 
 所有 `/api/agent/**` 接口都要求登录并携带 JWT。
+
+## 部署说明
+
+### 后端部署
+
+```bash
+cd campus-trade-server
+mvn clean package -DskipTests
+```
+
+启动 jar（示例环境变量）：
+
+```bash
+export DB_HOST=127.0.0.1
+export DB_PASSWORD=your_password
+export REDIS_HOST=127.0.0.1
+export JWT_SECRET=your-production-secret-at-least-32-chars
+export CORS_ALLOWED_ORIGINS=https://your-domain.com
+export UPLOAD_DIR=/var/www/campus-trade/uploads
+java -jar target/campus-trade-server-1.0.0.jar
+```
+
+**生产环境必须设置 `JWT_SECRET`**（至少 32 字符），建议使用服务器固定目录作为 `UPLOAD_DIR`。
+
+### 前端部署
+
+```bash
+cd campus-trade-web
+# 生产构建时设置 API 地址（若前后端同域反代可保持 /api）
+export VITE_API_BASE_URL=/api
+npm install
+npm run build
+```
+
+将 `dist/` 目录部署到 Nginx 或其他 Web 服务器。
+
+### Nginx 反向代理示例
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    root /var/www/campus-trade/dist;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:8080/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location /uploads/ {
+        proxy_pass http://127.0.0.1:8080/uploads/;
+    }
+}
+```
+
+若前后端分离部署在不同域名，将 `VITE_API_BASE_URL` 设为完整 API 地址，并在后端 `CORS_ALLOWED_ORIGINS` 中配置前端域名。
 
 ## 常见问题排查
 
