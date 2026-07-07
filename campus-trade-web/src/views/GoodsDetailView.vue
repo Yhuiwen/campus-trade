@@ -45,7 +45,10 @@ const toggleFavorite = async () => {
   <div class="page panel detail-layout">
     <img class="detail-image" :src="goods.imageUrl || 'https://placehold.co/700x600?text=Campus+Market'">
     <div class="detail-info">
-      <el-tag>{{ goods.categoryName }}</el-tag>
+      <div class="detail-tags">
+        <el-tag>{{ goods.categoryName }}</el-tag>
+        <el-tag type="success" effect="plain">{{ statusText[goods.status] || goods.status }}</el-tag>
+      </div>
       <h1>{{ goods.title }}</h1>
       <p class="muted">浏览 {{ goods.viewCount }} 次</p>
       <div class="detail-price">¥{{ goods.price }} <del class="muted" style="font-size:16px">¥{{ goods.originalPrice }}</del></div>
@@ -55,6 +58,10 @@ const toggleFavorite = async () => {
         <el-descriptions-item label="商品状态">{{ statusText[goods.status] || goods.status }}</el-descriptions-item>
       </el-descriptions>
       <h3>商品描述</h3><p style="line-height:1.8;white-space:pre-wrap">{{ goods.description }}</p>
+      <div class="trade-reminder">
+        <strong>交易提醒</strong>
+        <span>建议线下验货、确认商品状态、保留沟通记录。</span>
+      </div>
       <el-card class="risk-card" shadow="never">
         <template #header>
           <div style="display:flex;justify-content:space-between;align-items:center">

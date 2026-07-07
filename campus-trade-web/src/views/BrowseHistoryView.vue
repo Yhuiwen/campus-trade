@@ -10,7 +10,7 @@ onMounted(async () => { goods.value = await getMyHistory() })
 
 <template>
   <div class="page">
-    <div class="section-title"><h2>最近浏览</h2><span class="muted">按最近访问时间排列，最多显示 50 条</span></div>
+    <div class="section-title"><h2>最近浏览</h2><span class="muted">按最近访问时间排列，最多显示 50 条，便于找回看过的商品</span></div>
     <div class="goods-grid">
       <el-card v-for="item in goods" :key="item.id" class="goods-card" :body-style="{padding:'12px'}" @click="router.push(`/goods/${item.id}`)">
         <img class="goods-image" :src="item.imageUrl || 'https://placehold.co/500x360?text=Campus+Market'">
@@ -21,6 +21,6 @@ onMounted(async () => { goods.value = await getMyHistory() })
         </div>
       </el-card>
     </div>
-    <el-empty v-if="!goods.length" description="暂无浏览记录" />
+    <el-empty v-if="!goods.length" class="friendly-empty" description="暂无浏览记录，浏览商品后会自动沉淀在这里" />
   </div>
 </template>

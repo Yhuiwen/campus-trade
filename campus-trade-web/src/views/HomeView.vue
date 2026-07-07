@@ -32,10 +32,16 @@ onMounted(async () => {
       <el-tag effect="dark" round color="#06b6d4">校园信用交易</el-tag>
       <h1>好物不闲置，信用有价值</h1>
       <p>教材、数码、生活用品，在同一所校园里找到它们的新主人。</p>
-      <div style="display:flex;width:620px;margin-top:25px">
+      <div class="hero-search">
         <el-input v-model="query.keyword" size="large" clearable placeholder="搜索想要的商品" @keyup.enter="load" />
         <el-button type="primary" size="large" @click="load">搜索</el-button>
       </div>
+    </section>
+
+    <section class="selling-points">
+      <div><strong>信用评价</strong><span>交易完成后沉淀评价与信用分，帮助买家判断卖家可靠度。</span></div>
+      <div><strong>安全交易</strong><span>商品审核、订单状态与交易提醒降低校园二手交易风险。</span></div>
+      <div><strong>智能推荐</strong><span>基于收藏、浏览和热门分类提供更贴近需求的商品推荐。</span></div>
     </section>
 
     <div class="section-title"><h2>智能推荐</h2><span class="muted">基于收藏、浏览分类与平台热度</span></div>
@@ -61,6 +67,7 @@ onMounted(async () => {
         </div>
       </el-card>
     </div>
+    <el-empty v-if="!hot.length" class="friendly-empty" description="暂无热门商品，发布后会展示平台热度" />
 
     <div class="section-title"><h2>发现好物</h2></div>
     <div class="toolbar">
@@ -77,6 +84,7 @@ onMounted(async () => {
         </div>
       </el-card>
     </div>
+    <el-empty v-if="!goods.length" class="friendly-empty" description="没有找到匹配商品，换个关键词试试" />
     <el-pagination v-if="total > query.size" v-model:current-page="query.current" style="justify-content:center;margin-top:30px" background layout="prev, pager, next" :total="total" :page-size="query.size" @current-change="load" />
   </div>
 </template>

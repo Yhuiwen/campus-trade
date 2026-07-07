@@ -44,12 +44,21 @@ const submit = async () => {
 
 <template>
   <div class="form-page panel">
-    <h1>发布一件闲置</h1><p class="muted">真实描述物品状况，更容易获得买家信任</p>
+    <div class="publish-heading">
+      <div>
+        <h1>发布一件闲置</h1>
+        <p class="muted">真实描述商品状况，更容易获得买家信任。</p>
+      </div>
+      <el-tag type="success" effect="plain">等待审核后上架</el-tag>
+    </div>
     <el-form label-position="top">
       <el-form-item label="商品图片">
-        <el-upload :show-file-list="false" :http-request="upload" accept=".jpg,.jpeg,.png">
-          <img v-if="form.imageUrl" :src="form.imageUrl" style="width:220px;height:160px;object-fit:cover;border-radius:12px">
-          <el-button v-else size="large">选择图片上传</el-button>
+        <el-upload class="upload-box" :show-file-list="false" :http-request="upload" accept=".jpg,.jpeg,.png">
+          <img v-if="form.imageUrl" :src="form.imageUrl" class="publish-image">
+          <div v-else class="upload-placeholder">
+            <strong>选择图片上传</strong>
+            <span>建议上传清晰实拍图，便于审核和成交。</span>
+          </div>
         </el-upload>
       </el-form-item>
       <el-form-item label="商品标题"><el-input v-model="form.title" maxlength="100" show-word-limit placeholder="2-100 字" /></el-form-item>
@@ -59,6 +68,7 @@ const submit = async () => {
         <el-col :span="12"><el-form-item label="售价"><el-input-number v-model="form.price" :min="0.01" :precision="2" style="width:100%" /><div class="muted" style="font-size:12px;margin-top:4px">售价不能超过原价的 1.2 倍</div></el-form-item></el-col>
         <el-col :span="12"><el-form-item label="原价"><el-input-number v-model="form.originalPrice" :min="0.01" :precision="2" style="width:100%" /></el-form-item></el-col>
       </el-row>
+      <el-alert title="发布建议" description="真实描述商品状况、成色和配件信息，价格与原价保持合理区间，更容易获得买家信任。" type="info" :closable="false" show-icon />
       <el-button plain type="primary" size="large" style="width:100%;margin-bottom:14px" :loading="adviceLoading" @click="getAdvice">
         智能生成发布建议
       </el-button>

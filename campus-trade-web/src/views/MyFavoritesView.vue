@@ -18,7 +18,7 @@ const remove = async (event, id) => {
 
 <template>
   <div class="page">
-    <div class="section-title"><h2>我的收藏</h2><span class="muted">收藏的好物都在这里</span></div>
+    <div class="section-title"><h2>我的收藏</h2><span class="muted">收藏的好物都在这里，方便后续比价和下单</span></div>
     <div class="goods-grid">
       <el-card v-for="item in goods" :key="item.id" class="goods-card" :body-style="{padding:'12px'}" @click="router.push(`/goods/${item.id}`)">
         <img class="goods-image" :src="item.imageUrl || 'https://placehold.co/500x360?text=Campus+Market'">
@@ -32,6 +32,6 @@ const remove = async (event, id) => {
         </div>
       </el-card>
     </div>
-    <el-empty v-if="!goods.length" description="还没有收藏商品" />
+    <el-empty v-if="!goods.length" class="friendly-empty" description="还没有收藏商品，看到喜欢的商品可以先收藏" />
   </div>
 </template>

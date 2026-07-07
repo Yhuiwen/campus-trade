@@ -39,7 +39,7 @@ const send = async preset => {
   <div class="page agent-layout">
     <section class="agent-main panel">
       <div class="agent-heading">
-        <div><h1>智能交易助手 Agent</h1><p class="muted">基于平台实时数据与本地规则运行，无需外部大模型 API</p></div>
+        <div><h1>智能交易助手 Agent</h1><p class="muted">本地规则引擎，无需外部大模型 API，可结合商品、价格和信用数据给出建议。</p></div>
         <el-tag type="success" effect="dark" round>本地规则引擎</el-tag>
       </div>
       <div ref="chatBox" class="chat-box">
@@ -68,9 +68,18 @@ const send = async preset => {
     </section>
     <aside class="panel agent-guide">
       <h3>我可以帮你</h3>
-      <el-button plain @click="send('给我推荐一些数码产品')">发现相关商品</el-button>
-      <el-button plain @click="send('怎么提高信用分')">了解信用规则</el-button>
-      <el-button plain @click="send('我的商品应该卖多少钱')">商品定价建议</el-button>
+      <button class="guide-card" @click="send('给我推荐一些数码产品')">
+        <strong>发现相关商品</strong>
+        <span>结合热门分类与浏览偏好推荐商品。</span>
+      </button>
+      <button class="guide-card" @click="send('怎么提高信用分')">
+        <strong>了解信用规则</strong>
+        <span>解释评价、成交和信用分之间的关系。</span>
+      </button>
+      <button class="guide-card" @click="send('我的商品应该卖多少钱')">
+        <strong>商品定价建议</strong>
+        <span>根据分类、原价和描述给出定价区间。</span>
+      </button>
       <el-alert title="分析具体商品时，请填写商品 ID。商品 ID 可从详情页网址中查看。" type="info" :closable="false" />
     </aside>
   </div>
