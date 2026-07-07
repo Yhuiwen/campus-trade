@@ -1,5 +1,31 @@
 # 校园二手交易与信用评价平台
 
+## 项目截图
+
+![登录页](docs/screenshots/01-login.png)
+![首页商品列表](docs/screenshots/02-home-goods.png)
+![商品详情](docs/screenshots/03-goods-detail.png)
+![商品发布](docs/screenshots/04-goods-publish.png)
+![订单页面](docs/screenshots/05-orders.png)
+![个人收藏与信用入口](docs/screenshots/06-profile-credit.png)
+![智能交易助手](docs/screenshots/09-agent.png)
+
+## 快速查看
+
+- 本地运行指南：[docs/run-guide.md](docs/run-guide.md)
+- 数据库设计说明：[docs/database/database-design.md](docs/database/database-design.md)
+- 接口说明概览：[docs/api/api-overview.md](docs/api/api-overview.md)
+- 手工测试清单：[docs/testing-checklist.md](docs/testing-checklist.md)
+- 面试讲解稿：[docs/interview-guide.md](docs/interview-guide.md)
+
+## 演示重点
+
+- 用户注册登录与 JWT 鉴权，支持 `USER` / `ADMIN` 角色区分。
+- 商品发布、审核、搜索、详情浏览、图片上传和下架。
+- 订单创建、取消、完成，以及商品 `LOCKED` 状态下的重复购买控制。
+- 完成订单后的评价机制与卖家信用分变化。
+- Redis 商品缓存、后台统计看板和本地规则版智能交易助手。
+
 ## 项目简介
 
 一个基于 Spring Boot 3 与 Vue 3 的前后端分离校园二手交易平台。项目覆盖商品发布与审核、订单交易、信用评价、收藏、浏览历史、Redis 缓存和后台数据看板，适合作为 JavaWeb 课程设计或个人项目展示。
